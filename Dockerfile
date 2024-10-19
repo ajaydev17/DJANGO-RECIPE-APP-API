@@ -1,5 +1,5 @@
 FROM python:3.9-alpine3.13
-LABEL maintainer='devadigaajay1729@gmail.com'
+LABEL maintainer="devadigaajay1729@gmail.com"
 
 ENV PYTHONUNBUFFERED 1
 
@@ -8,8 +8,6 @@ COPY ./requirements.dev.txt /tmp/requirements.dev.txt
 COPY ./app /app
 WORKDIR /app
 EXPOSE 8000
-
-RUN apk add --no-cache bash
 
 ARG DEV=false
 RUN python -m venv /venv && \
@@ -24,6 +22,6 @@ RUN python -m venv /venv && \
         --no-create-home \
         django-user
 
-ENV PATH='/venv/bin:$PATH'
+ENV PATH="/venv/bin:$PATH"
 
 USER django-user
