@@ -2,7 +2,7 @@
 Test custom Django management commands.
 """
 
-from unittest import mock
+from unittest.mock import patch
 from psycopg2 import OperationalError as Psycopg2OperationalError
 from django.core.management import call_command
 from django.test import SimpleTestCase

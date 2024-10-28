@@ -29,7 +29,7 @@ class Command(BaseCommand):
                 self.check(databases=['default'])
                 db_up = True
             except (Psycopg2OperationalError, OperationalError):
-                self.stdout.write("Database is not ready yet. Waiting for 1 second...  \r", end="")
+                self.stdout.write("Database is not ready yet. Waiting for 1 second...")
                 time.sleep(1)
 
         self.stdout.write(self.style.SUCCESS("\nDatabase is ready!"))
