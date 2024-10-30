@@ -8,7 +8,18 @@ from core import models
 from decimal import Decimal
 
 
-class UserModelTest(TestCase):
+def create_user(email='user@example.com', password='password123'):
+    """
+    Create a new user.
+    """
+
+    return get_user_model().objects.create_user(
+        email=email,
+        password=password
+    )
+
+
+class ModelTest(TestCase):
     """
     Test the User model
     """
@@ -86,3 +97,23 @@ class UserModelTest(TestCase):
         )
 
         self.assertEqual(str(recipe), recipe.title)
+
+    def test_create_tag(self):
+        """
+        Test creating a new tag.
+        """
+
+        user = create_user()
+        tag = models.Tag.objects.create(user=user, name='Sample Tag')
+
+        self.assertEqual(str(tag), tag.name)
+
+    def test_create_ingredient(self):
+        """
+        Test creating a new ingredient.
+        """
+
+        user = create_user()
+        ingredient = models.Ingredient.objects.create(user=user, name='Sample Ingredient')
+
+        self.assertEqual(str(ingredient), ingredient.name)
