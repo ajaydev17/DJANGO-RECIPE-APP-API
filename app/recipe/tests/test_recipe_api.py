@@ -3,6 +3,11 @@ Tests for recipe API
 """
 
 from decimal import Decimal
+import tempfile
+import os
+
+from PIL import Image
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
@@ -21,6 +26,13 @@ def recipe_detail_url(recipe_id):
     """
 
     return reverse('recipe:recipe-detail', args=[recipe_id])
+
+def image_upload_url(recipe_id):
+    """
+    Return the URL for uploading an image for a recipe.
+    """
+
+    return reverse('recipe:recipe-upload-image', args=[recipe_id])
 
 
 
@@ -488,3 +500,116 @@ class PrivateRecipeApiTests(TestCase):
         recipe.refresh_from_db()
         self.assertEqual(recipe.ingredients.count(), 0)
 
+    def test_filter_recipes_by_tag(self):
+        """
+        Test filtering recipes by tag.
+        """
+
+        tag_vegan = Tag.objects.create(name='Vegan', user=self.user)
+        tag_dessert = Tag.objects.create(name='Dessert', user=self.user)
+
+        recipe1 = create_recipe(self.user, title="Thai vegetable Curry")
+        recipe1.tags.add(tag_vegan)
+
+        recipe2 = create_recipe(self.user, title="Chocolate Lava Cake")
+        recipe2.tags.add(tag_dessert)
+
+        recipe3 = create_recipe(self.user, title="Fish and chips")
+
+        params = {'tags': f'{tag_vegan.id},{tag_dessert.id}'}
+        response = self.client.get(RECIPE_URL, params)
+
+        s1 = RecipeSerializer(recipe1)
+        s2 = RecipeSerializer(recipe2)
+        s3 = RecipeSerializer(recipe3)
+
+        self.assertIn(s1.data, response.data)
+        self.assertIn(s2.data, response.data)
+        self.assertNotIn(s3.data, response.data)
+
+    def test_filter_recipes_by_ingredient(self):
+        """
+        Test filtering recipes by ingredient.
+        """
+
+        ingredient_carrot = Ingredient.objects.create(name='Carrot', user=self.user)
+        ingredient_potato = Ingredient.objects.create(name='Potato', user=self.user)
+
+        recipe1 = create_recipe(self.user, title="Carrot Stuffed Bell Peppers")
+        recipe1.ingredients.add(ingredient_carrot)
+
+        recipe2 = create_recipe(self.user, title="Potato Salad")
+        recipe2.ingredients.add(ingredient_potato)
+
+        recipe3 = create_recipe(self.user, title="Grilled Chicken and Vegetables")
+
+        params = {'ingredients': f'{ingredient_carrot.id},{ingredient_potato.id}'}
+        response = self.client.get(RECIPE_URL, params)
+
+        s1 = RecipeSerializer(recipe1)
+        s2 = RecipeSerializer(recipe2)
+        s3 = RecipeSerializer(recipe3)
+
+        self.assertIn(s1.data, response.data)
+        self.assertIn(s2.data, response.data)
+        self.assertNotIn(s3.data, response.data)
+
+
+class ImageUploadTest(TestCase):
+    """
+    Test the image upload functionality
+    """
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = get_user_model().objects.create_user(
+            email='test@example.com',
+            password='test123'
+        )
+        self.client.force_authenticate(self.user)
+        self.recipe = create_recipe(self.user)
+
+    def tearDown(self):
+        self.recipe.image.delete()
+
+    def test_upload_image(self):
+        """
+        Test uploading an image to a recipe
+        """
+
+        url = image_upload_url(self.recipe.id)
+
+        with tempfile.NamedTemporaryFile(suffix='.jpg') as image_file:
+            img = Image.new('RGB', (100, 100))
+            img.save(image_file, format='JPEG')
+            image_file.seek(0)
+
+            payload = {
+                'image': image_file,
+            }
+
+            response = self.client.post(url, payload, format='multipart')
+
+        self.recipe.refresh_from_db()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('image', response.data)
+        self.assertTrue(os.path.exists(self.recipe.image.path))
+
+    def test_upload_invalid_image(self):
+        """
+        Test uploading an invalid image (non-JPEG format) to a recipe
+        """
+
+        url = image_upload_url(self.recipe.id)
+
+        with tempfile.NamedTemporaryFile(suffix='.txt') as image_file:
+            image_file.write(b'Not a JPEG file')
+            image_file.seek(0)
+
+            payload = {
+                'image': image_file,
+            }
+
+            response = self.client.post(url, payload, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
