@@ -128,13 +128,12 @@ class BaseRecipeAttributeViewSet(mixins.DestroyModelMixin, mixins.UpdateModelMix
         Return only the tags owned by the authenticated user.
         """
 
-        assigned_only = bool(
-            int(self.request.query_params.get('assigned_only', 0))
-        )
+        assigned_only_param = self.request.query_params.get('assigned_only', '0')
+        assigned_only = assigned_only_param.lower() in ['true', '1']
 
         queryset = self.queryset
         if assigned_only:
-            queryset = queryset.filter(recipes__is_null=False)
+            queryset = queryset.filter(recipes__isnull=False)
 
         return self.queryset.filter(user=self.request.user).order_by('-name').distinct()
 

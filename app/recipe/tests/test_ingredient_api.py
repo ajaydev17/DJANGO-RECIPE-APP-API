@@ -137,7 +137,7 @@ class PrivateIngredientsApiTests(TestCase):
         self.assertIn(s1.data, response.data)
         self.assertNotIn(s2.data, response.data)
 
-    def filter_ingredients_unique(self):
+    def test_filter_ingredients_unique(self):
         """
         Test that only unique ingredients are returned when assigned_only=True.
         """
