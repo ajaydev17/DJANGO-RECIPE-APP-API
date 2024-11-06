@@ -142,7 +142,7 @@ class PrivateTagsApiTests(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn(serializer1.data, response.data)
-        self.assertIn(serializer2.data, response.data)
+        self.assertNotIn(serializer2.data, response.data)
 
     def test_filter_tags_unique(self):
         """
@@ -158,6 +158,5 @@ class PrivateTagsApiTests(TestCase):
         recipe2.tags.add(tag)
 
         response = self.client.get(TAGS_URL, {'assigned_only': True})
-        print(response.data)
 
         self.assertEqual(len(response.data), 1)
